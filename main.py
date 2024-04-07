@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 
-# Perceptron sınıfını tanımlama
+# Perceptron sınıfı
 class Perceptron:
     def __init__(self, no_of_inputs, threshold=100, learning_rate=0.01):
         self.threshold = threshold
@@ -10,11 +10,7 @@ class Perceptron:
            
     def predict(self, inputs):
         summation = np.dot(inputs, self.weights[1:]) + self.weights[0]
-        if summation > 0:
-            activation = 1
-        else:
-            activation = 0            
-        return activation
+        return 1 if summation > 0 else 0
 
     def train(self, training_inputs, labels):
         for _ in range(self.threshold):
@@ -23,37 +19,32 @@ class Perceptron:
                 self.weights[1:] += self.learning_rate * (label - prediction) * inputs
                 self.weights[0] += self.learning_rate * (label - prediction)
 
-# Uygulama başlangıcı
+# Streamlit uygulaması başlangıcı
 def main():
-    st.title('Simple Perceptron Model')
-    st.write("This is a simple demonstration of a perceptron model for binary classification.")
+    st.title('Simple Perceptron Model for Binary Classification')
+    st.write("This app uses a simple perceptron to classify binary input vectors.")
 
-    # Perceptron modelinin oluşturulması ve eğitimi
-    perceptron = Perceptron(no_of_inputs=4, threshold=100, learning_rate=0.1)
-    training_inputs = [np.array([0,1,0,1]), np.array([1,0,1,0])]
-    labels = [0, 1]
+    # Perceptron modelini oluşturma ve eğitim verisi ile eğitme
+    perceptron = Perceptron(no_of_inputs=4)
+    training_inputs = np.array([
+        [0, 0, 0, 0],
+        [0, 1, 0, 1],
+        [1, 0, 1, 0],
+        [1, 1, 1, 1]
+    ])
+    labels = np.array([0, 1, 1, 0])
     perceptron.train(training_inputs, labels)
 
-    # Kullanıcı girişi
-    input_vector = st.text_input("Enter your binary input vector (4 bits, comma-separated):")
-    if input_vector:
-        input_vector = np.array([int(x.strip()) for x in input_vector.split(",")])
-        prediction = perceptron.predict(input_vector)
-        st.write(f"Prediction: {'Class 1' if prediction == 1 else 'Class 0'}")
-
-    # Tüm "Class 0" veren vektörleri bul ve göster
-    if st.button("Show all vectors giving Class 0 output"):
-        vectors = []
-        for i in range(16):  # 4 bits => 2^4 possible combinations
-            vec = np.array([int(x) for x in format(i, '04b')])
-            if perceptron.predict(vec) == 0:
-                vectors.append(f"{vec} => Class 0")
-        if vectors:
-            st.write("All input vectors giving Class 0 output:")
-            for v in vectors:
-                st.write(v)
+    # Kullanıcı girişini alma ve tahminde bulunma
+    user_input = st.text_input('Enter a binary vector (4 bits) separated by commas:')
+    if user_input:
+        # Girdiyi işle ve tahmin yap
+        binary_vector = np.array([int(bit) for bit in user_input.split(',') if bit.strip().isdigit()])
+        if len(binary_vector) == 4:
+            prediction = perceptron.predict(binary_vector)
+            st.success(f"The perceptron predicts this vector as: {'Class 1' if prediction == 1 else 'Class 0'}")
         else:
-            st.write("No vectors found that give Class 0 output.")
+            st.error("Please enter a binary vector with exactly 4 bits.")
 
 if __name__ == '__main__':
     main()
