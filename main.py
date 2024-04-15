@@ -1,50 +1,73 @@
 import streamlit as st
 import numpy as np
+from PIL import Image
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.optimizers import SGD
 
-# Perceptron sınıfı
-class Perceptron:
-    def __init__(self, no_of_inputs, threshold=100, learning_rate=0.01):
-        self.threshold = threshold
-        self.learning_rate = learning_rate
-        self.weights = np.zeros(no_of_inputs + 1)
-           
-    def predict(self, inputs):
-        summation = np.dot(inputs, self.weights[1:]) + self.weights[0]
-        return 1 if summation > 0 else 0
+# MNIST veri setini yükleyip ön işleme
+def load_data():
+    # MNIST veri setini yükleyin
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+    # Normalize et ve şeklini değiştir (örnek, 28x28 pikselden düz vektöre)
+    X_train = X_train.reshape(X_train.shape[0], -1) / 255.0
+    X_test = X_test.reshape(X_test.shape[0], -1) / 255.0
+    # Etiketleri kategorik formata dönüştür
+    y_train = to_categorical(y_train)
+    y_test = to_categorical(y_test)
+    return X_train, y_train, X_test, y_test
 
-    def train(self, training_inputs, labels):
-        for _ in range(self.threshold):
-            for inputs, label in zip(training_inputs, labels):
-                prediction = self.predict(inputs)
-                self.weights[1:] += self.learning_rate * (label - prediction) * inputs
-                self.weights[0] += self.learning_rate * (label - prediction)
+# Perceptron modelini oluşturma
+def build_model(input_shape, num_classes):
+    model = Sequential()
+    model.add(Dense(num_classes, activation='softmax', input_shape=(input_shape,)))
+    return model
 
-# Streamlit uygulaması başlangıcı
+# Modeli eğit
+def train_model(model, X_train, y_train):
+    model.compile(optimizer=SGD(), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.fit(X_train, y_train, epochs=10)
+
+# Görüntüyü model için uygun formata dönüştürme
+def process_image(image):
+    image = image.resize((28, 28))
+    image = image.convert('L')  # Gri tonlamaya çevir
+    image = np.array(image)
+    image = image.reshape(1, -1) / 255.0  # Normalize et ve düzleştir
+    return image
+
+# Streamlit uygulaması
 def main():
-    st.title('Simple Perceptron Model for Binary Classification')
-    st.write("This app uses a simple perceptron to classify binary input vectors.")
+    st.title("Digit Recognition with Single-Layer Perceptron")
+    
+    # Modeli ve verileri yükleyin
+    X_train, y_train, X_test, y_test = load_data()
+    model = build_model(X_train.shape[1], y_train.shape[1])
+    
+    if st.button('Train the Model'):
+        # Modeli eğit
+        train_model(model, X_train, y_train)
+        st.success('Model trained successfully!')
+    
+    # Kullanıcıdan bir görüntü yüklemesini isteyin
+    uploaded_file = st.file_uploader("Upload a digit image...", type=["png", "jpg", "jpeg"])
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption='Uploaded Image.', use_column_width=True)
+        processed_image = process_image(image)
+        
+        # Tahmini yap ve göster
+        if st.button('Recognize Digit'):
+            prediction = model.predict(processed_image)
+            st.write(f"Predicted digit: {np.argmax(prediction)}")
+    
+    # Opsiyonel: model performansını değerlendir
+    if st.checkbox('Evaluate Model'):
+        loss, accuracy = model.evaluate(X_test, y_test)
+        st.write(f"Test accuracy: {accuracy}")
 
-    # Perceptron modelini oluşturma ve eğitim verisi ile eğitme
-    perceptron = Perceptron(no_of_inputs=4)
-    training_inputs = np.array([
-        [0, 0, 0, 0],
-        [0, 1, 0, 1],
-        [1, 0, 1, 0],
-        [1, 1, 1, 1]
-    ])
-    labels = np.array([0, 1, 1, 0])
-    perceptron.train(training_inputs, labels)
-
-    # Kullanıcı girişini alma ve tahminde bulunma
-    user_input = st.text_input('Enter a binary vector (4 bits) separated by commas:')
-    if user_input:
-        # Girdiyi işle ve tahmin yap
-        binary_vector = np.array([int(bit) for bit in user_input.split(',') if bit.strip().isdigit()])
-        if len(binary_vector) == 4:
-            prediction = perceptron.predict(binary_vector)
-            st.success(f"The perceptron predicts this vector as: {'Class 1' if prediction == 1 else 'Class 0'}")
-        else:
-            st.error("Please enter a binary vector with exactly 4 bits.")
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
+
