@@ -1,6 +1,4 @@
 streamlit==1.10.0
-tensorflow==2.8.0  # Eğer GPU desteği istiyorsanız tensorflow-gpu==2.8.0 kullanabilirsiniz.
-numpy==1.22.3
-Pillow==9.0.1
-matplotlib==3.5.1  # Eğer grafik çizdirmek istiyorsanız.
-scikit-learn==1.0.2  # Veri ön işleme ve diğer ML görevleri için.
+numpy==1.21.2
+Pillow==8.3.1
+scikit-learn==0.24.2
