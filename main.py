@@ -1,6 +1,7 @@
 import numpy as np
 import streamlit as st
 from PIL import Image
+from sklearn.linear_model import Perceptron
 
 # 0'dan 9'a kadar olan sayıları temsil eden matrisler
 digits = [
@@ -65,33 +66,17 @@ digits = [
               [0, 1, 1, 1, 0]])
 ]
 
-# Perceptron Modeli
-class Perceptron:
-    def __init__(self, num_features):
-        self.weights = np.zeros(num_features + 1)  # Bias dahil ağırlıklar
-        self.learning_rate = 0.1
+# Verileri hazırla
+X = np.array(digits).reshape((10, 25))  # 10 örnek, her biri 25 özellik
+y = np.arange(10)  # Etiketler
 
-    def predict(self, x):
-        return 1 if np.dot(self.weights[1:], x) + self.weights[0] > 0 else 0
-
-    def train(self, X, y, epochs):
-        for _ in range(epochs):
-            for i in range(len(X)):
-                x = np.insert(X[i], 0, 1)  # Bias terimini ekleyin
-                y_pred = self.predict(x)
-                error = y[i] - y_pred
-                self.weights[1:] += self.learning_rate * error * x[1:]  # Ağırlıkları güncelle
-                self.weights[0] += self.learning_rate * error  # Bias ağırlığını güncelle
+# Modeli oluştur ve eğit
+perceptron = Perceptron(max_iter=100)
+perceptron.fit(X, y)
 
 # Streamlit Uygulaması
 def main():
     st.title("Digit Recognition")
-
-    # Perceptron modelini eğit
-    X = np.array(digits).reshape((10, 25))  # 10 örnek, her biri 25 özellik
-    y = np.arange(10)  # Etiketler
-    perceptron = Perceptron(num_features=25)  # Giriş boyutu 5x5=25
-    perceptron.train(X, y, epochs=100)
 
     uploaded_image = st.file_uploader("Bir sayı yükleyin", type=["png", "jpg", "jpeg"])
 
@@ -107,9 +92,10 @@ def main():
         flattened_image = img_array.flatten()
         
         # Modeli kullanarak sayıyı tahmin et
-        prediction = perceptron.predict(np.insert(flattened_image, 0, 1))
+        prediction = perceptron.predict([flattened_image])
 
-        st.write("Tahmin Edilen Sayı:", prediction)
+        st.write("Tahmin Edilen Sayı:", prediction[0])
 
 if __name__ == "__main__":
     main()
+
