@@ -96,15 +96,12 @@ def main():
     uploaded_image = st.file_uploader("Bir sayı yükleyin", type=["png", "jpg", "jpeg"])
 
     if uploaded_image is not None:
-        # Yüklenen görüntüyü oku ve siyah-beyaz olarak dönüştür
-        image = Image.open(uploaded_image).convert("L")
+        # Yüklenen görüntüyü açın ve boyutunu 5x5'e yeniden boyutlandırın
+        image = Image.open(uploaded_image).convert("L").resize((5, 5))
         st.image(image, caption='Yüklenen Görüntü', use_column_width=True)
-
-        # Görüntüyü 5x5 boyutuna yeniden boyutlandır
-        resized_image = image.resize((5, 5))
         
         # Görüntüyü numpy dizisine dönüştür
-        img_array = np.array(resized_image)
+        img_array = np.array(image)
         
         # Görüntüyü düzleştir
         flattened_image = img_array.flatten()
