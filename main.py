@@ -1,62 +1,64 @@
 import streamlit as st
 import numpy as np
-from PIL import Image
-from sklearn.datasets import load_digits
-from sklearn.linear_model import Perceptron
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 
-# Veri setini yükleyip hazırlama
-@st.cache
-def load_data():
-    digits = load_digits()
-    X = digits.data
-    y = digits.target
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    return X_train, y_train, X_test, y_test, digits.images
+# Veri Oluşturma
+def generate_data():
+    data = []
+    labels = []
+    for i in range(10):  # 0-9 arasındaki rakamlar için döngü
+        for _ in range(100):  # Her rakam için 100 örnek oluştur
+            # Örnek veri oluştur
+            image = np.random.randint(0, 2, size=(5, 5))  # Örnek bir 5x5 görüntü
+            data.append(image.flatten())  # Görüntüyü düzleştirip veriye ekle
+            labels.append(i)  # Etiketi ekle
+    return np.array(data), np.array(labels)
 
-# Perceptron modelini eğitme ve değerlendirme
-def train_perceptron(X_train, y_train):
-    model = Perceptron(max_iter=1000, tol=1e-3, random_state=42)
-    model.fit(X_train, y_train)
-    return model
+# Perceptron Modeli
+class Perceptron:
+    def __init__(self, num_features):
+        self.weights = np.zeros(num_features + 1)  # Bias dahil ağırlıklar
+        self.learning_rate = 0.1
 
-# Görüntüyü model için uygun formata dönüştürme
-def process_image(image):
-    image = image.resize((8, 8), Image.LANCZOS)
-    image = image.convert('L')  # Gri tonlamaya çevir
-    image = np.array(image, dtype=np.float64)
-    image = image.reshape(1, -1) / 16.0  # Normalize et ve düzleştir
-    return image
+    def predict(self, x):
+        return 1 if np.dot(self.weights[1:], x) + self.weights[0] > 0 else 0
 
+    def train(self, X, y, epochs):
+        for _ in range(epochs):
+            for i in range(len(X)):
+                x = np.insert(X[i], 0, 1)  # Bias terimini ekleyin
+                y_pred = self.predict(x)
+                error = y[i] - y_pred
+                self.weights[1:] += self.learning_rate * error * x[1:]  # Ağırlıkları güncelle
+                self.weights[0] += self.learning_rate * error  # Bias ağırlığını güncelle
+
+# Streamlit Uygulaması
 def main():
-    st.title("Digit Recognition with Perceptron")
-    X_train, y_train, X_test, y_test, example_images = load_data()
+    st.title("Sayı Tanıma Uygulaması")
 
-    # Modeli eğit
-    if st.button('Train the Perceptron Model'):
-        model = train_perceptron(X_train, y_train)
-        st.session_state['model'] = model
-        predictions = model.predict(X_test)
-        accuracy = accuracy_score(y_test, predictions)
-        st.write(f"Model trained. Accuracy on test set: {accuracy * 100:.2f}%")
+    # Veri setini oluştur
+    X, y = generate_data()
 
-    # Kullanıcıdan bir görüntü yüklemesini isteyin
-    uploaded_file = st.file_uploader("Upload a digit image (preferably 8x8 size)...", type=["png", "jpg", "jpeg"])
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file)
-        st.image(image, caption='Uploaded Image.', use_column_width=True)
-        processed_image = process_image(image)
+    # Perceptron modelini eğit
+    perceptron = Perceptron(num_features=X.shape[1])
+    perceptron.train(X, y, epochs=100)
 
-        # Tahmini yap ve göster
-        if st.button('Recognize Digit'):
-            if 'model' in st.session_state:
-                model = st.session_state['model']
-                prediction = model.predict(processed_image)
-                st.write(f"Predicted digit: {prediction[0]}")
-            else:
-                st.error("Please train the model first by clicking on 'Train the Perceptron Model'.")
+    uploaded_image = st.file_uploader("Bir sayı yükleyin", type=["png", "jpg", "jpeg"])
+
+    if uploaded_image is not None:
+        # Yüklenen görüntüyü oku
+        image = np.array(uploaded_image)
+        st.image(image, caption='Yüklenen Görüntü', use_column_width=True)
+
+        # Görüntüyü 5x5 boyutuna yeniden boyutlandır
+        resized_image = np.array(Image.open(uploaded_image).resize((5, 5)))
+        
+        # Görüntüyü düzleştir
+        flattened_image = resized_image.flatten()
+
+        # Modeli kullanarak sayıyı tahmin et
+        prediction = perceptron.predict(np.insert(flattened_image, 0, 1))
+
+        st.write("Tahmin Edilen Sayı:", prediction)
 
 if __name__ == "__main__":
     main()
-
