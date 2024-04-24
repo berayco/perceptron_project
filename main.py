@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+from PIL import Image
 
 # Veri Oluşturma
 def generate_data():
@@ -62,3 +63,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
