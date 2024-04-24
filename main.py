@@ -1,18 +1,69 @@
-import streamlit as st
 import numpy as np
+import streamlit as st
 from PIL import Image
 
-# Veri Oluşturma
-def generate_data():
-    data = []
-    labels = []
-    for i in range(10):  # 0-9 arasındaki rakamlar için döngü
-        for _ in range(100):  # Her rakam için 100 örnek oluştur
-            # Örnek veri oluştur
-            image = np.random.randint(0, 2, size=(5, 5))  # Örnek bir 5x5 görüntü
-            data.append(image.flatten())  # Görüntüyü düzleştirip veriye ekle
-            labels.append(i)  # Etiketi ekle
-    return np.array(data), np.array(labels)
+# 0'dan 9'a kadar olan sayıları temsil eden matrisler
+digits = [
+    np.array([[0, 1, 1, 1, 0],   # 0
+              [1, 0, 0, 0, 1],
+              [1, 0, 0, 0, 1],
+              [1, 0, 0, 0, 1],
+              [0, 1, 1, 1, 0]]),
+
+    np.array([[0, 0, 1, 0, 0],   # 1
+              [0, 1, 1, 0, 0],
+              [0, 0, 1, 0, 0],
+              [0, 0, 1, 0, 0],
+              [0, 1, 1, 1, 0]]),
+
+    np.array([[0, 1, 1, 1, 0],   # 2
+              [0, 0, 0, 1, 0],
+              [0, 1, 1, 1, 0],
+              [1, 0, 0, 0, 0],
+              [0, 1, 1, 1, 0]]),
+
+    np.array([[0, 1, 1, 1, 0],   # 3
+              [0, 0, 0, 1, 0],
+              [0, 1, 1, 1, 0],
+              [0, 0, 0, 1, 0],
+              [0, 1, 1, 1, 0]]),
+
+    np.array([[1, 0, 0, 1, 0],   # 4
+              [1, 0, 0, 1, 0],
+              [1, 1, 1, 1, 1],
+              [0, 0, 0, 1, 0],
+              [0, 0, 0, 1, 0]]),
+
+    np.array([[1, 1, 1, 1, 0],   # 5
+              [1, 0, 0, 0, 0],
+              [1, 1, 1, 1, 0],
+              [0, 0, 0, 1, 0],
+              [1, 1, 1, 1, 0]]),
+
+    np.array([[0, 1, 1, 1, 0],   # 6
+              [1, 0, 0, 0, 0],
+              [1, 1, 1, 1, 0],
+              [1, 0, 0, 1, 0],
+              [0, 1, 1, 1, 0]]),
+
+    np.array([[1, 1, 1, 1, 1],   # 7
+              [0, 0, 0, 1, 0],
+              [0, 0, 1, 0, 0],
+              [0, 1, 0, 0, 0],
+              [1, 0, 0, 0, 0]]),
+
+    np.array([[0, 1, 1, 1, 0],   # 8
+              [1, 0, 0, 1, 0],
+              [0, 1, 1, 1, 0],
+              [1, 0, 0, 1, 0],
+              [0, 1, 1, 1, 0]]),
+
+    np.array([[0, 1, 1, 1, 0],   # 9
+              [1, 0, 0, 1, 0],
+              [0, 1, 1, 1, 0],
+              [0, 0, 0, 1, 0],
+              [0, 1, 1, 1, 0]])
+]
 
 # Perceptron Modeli
 class Perceptron:
@@ -34,28 +85,30 @@ class Perceptron:
 
 # Streamlit Uygulaması
 def main():
-    st.title("Sayı Tanıma Uygulaması")
-
-    # Veri setini oluştur
-    X, y = generate_data()
+    st.title("Digit Recognition")
 
     # Perceptron modelini eğit
-    perceptron = Perceptron(num_features=X.shape[1])
+    X = np.array(digits).reshape((10, 25))  # 10 örnek, her biri 25 özellik
+    y = np.arange(10)  # Etiketler
+    perceptron = Perceptron(num_features=25)  # Giriş boyutu 5x5=25
     perceptron.train(X, y, epochs=100)
 
     uploaded_image = st.file_uploader("Bir sayı yükleyin", type=["png", "jpg", "jpeg"])
 
     if uploaded_image is not None:
-        # Yüklenen görüntüyü oku
-        image = np.array(uploaded_image)
+        # Yüklenen görüntüyü oku ve siyah-beyaz olarak dönüştür
+        image = Image.open(uploaded_image).convert("L")
         st.image(image, caption='Yüklenen Görüntü', use_column_width=True)
 
         # Görüntüyü 5x5 boyutuna yeniden boyutlandır
-        resized_image = np.array(Image.open(uploaded_image).resize((5, 5)))
+        resized_image = image.resize((5, 5))
+        
+        # Görüntüyü numpy dizisine dönüştür
+        img_array = np.array(resized_image)
         
         # Görüntüyü düzleştir
-        flattened_image = resized_image.flatten()
-
+        flattened_image = img_array.flatten()
+        
         # Modeli kullanarak sayıyı tahmin et
         prediction = perceptron.predict(np.insert(flattened_image, 0, 1))
 
@@ -63,4 +116,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
